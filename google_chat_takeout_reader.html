@@ -77,7 +77,7 @@
             color: #fff;
             display: none;
             padding: 10px;
-            //border-radius: 5px;
+            /* border-radius: 5px; */
             margin-bottom: 10px;
 
         }
@@ -133,11 +133,12 @@
     <div class="container">
         <div class="row header_container">
             <h1 class="page_header">Google Takeout | Google Chat Reader
-            <img src="https://github.com/mrwoof/google-chat-takeout-reader/blob/main/static/img/chat-reader-logo.png?raw=true" alt="Chat Reader">
+            <img src="https://raw.githubusercontent.com/remyfv/google-chat-takeout-reader/refs/heads/main/static/img/chat-reader-logo.png?raw=true" alt="Chat Reader">
             </h1>
         </div>
         <div class="row">
             <div class="col-md-3">
+                <input type="file" id="directory-input" webkitdirectory style="display: none;">
                 <button id="select-directory" class="btn btn-success btn-sm">Select Takeout Directory</button>
                 <ul id="chatList" class="list-group mt-3"><i>Choose the directory of uncompressed Takeout files</i></ul>
             </div>
@@ -176,7 +177,7 @@
         const extensionRegex = /\.[0-9a-z]+$/i;
 
         async function addChatMetadataEntry(itemPath, entry) {
-            const file = await entry.getFile();
+            const file = entry;
             const text = await file.text();
             const json = JSON.parse(text);
 
@@ -248,8 +249,7 @@
                 fileCache[chatId] = {};
             }
 
-            file = await entry.getFile();
-            fileCache[chatId][entry.name] = file;
+            fileCache[chatId][entry.name] = entry;
         }
 
         function getImgSrcPath(chatId, filename) {
@@ -305,10 +305,7 @@
             return msgsJson;
         }
 
-        async function showChatList() {
-            await pickDirectory();
-            console.log("Chats loaded")
-
+        function showChatList() {
             const chatList = $('#chatList');
 
             if (Object.keys(chatMessageFiles).length == 0) {
@@ -338,38 +335,51 @@
             }
         }
 
-        async function pickDirectory() {
+        function pickDirectory() {
+            $('#directory-input').click();
+        }
+
+        async function processSelectedDirectory(event) {
             const chatList = $('#chatList');
+            const files = event.target.files;
+            
+            if (!files || files.length === 0) {
+                return;
+            }
+
             try {
-                const directoryHandle = await window.showDirectoryPicker({startIn: "downloads"});
                 $('#chat').empty();
                 $('#chat_header').hide();
                 chatList.html(`<i>Loading chats...</i>`);
-                await listFilesRecursive(directoryHandle, chatList);
+                await processFileList(files, chatList);
+                console.log("Chats loaded");
+                showChatList();
             } catch (err) {
                 console.error(`Error: ${err}`);
                 chatList.html(`<i>Error: ${err.message}</i>`);
             }
+            
+            // Reset the input so the same directory can be selected again
+            event.target.value = '';
         }
 
-        async function listFilesRecursive(directoryHandle, chatList, prefix = '') {
-            console.log("Looking for chats in ", directoryHandle.name);
-            for await (const entry of directoryHandle.values()) {
-                const itemPath = `${prefix}${entry.name}`;
+        async function processFileList(files, chatList) {
+            console.log("Processing", files.length, "files");
+            for (const file of files) {
+                const itemPath = file.webkitRelativePath;
                 // console.log("processing ", itemPath);
-                if (entry.kind === 'file') {
-                    if (entry.name.endsWith('messages.json')) {
-                        addChatMessagesEntry(itemPath, entry);
-                    } else if (entry.name.endsWith('group_info.json')) {
-                        addChatMetadataEntry(itemPath, entry);
-                    } else {
-                        await addToFileCache(itemPath, entry);
-                    }
-                } else if (entry.kind === 'directory') {
-                    if (entry.name.startsWith('.') || entry.name === 'Users') {
-                        continue;
-                    }
-                    await listFilesRecursive(entry, chatList, itemPath + '/');
+                
+                // Skip hidden directories
+                if (itemPath.split('/').some(part => part.startsWith('.') || part === 'Users')) {
+                    continue;
+                }
+                
+                if (file.name.endsWith('messages.json')) {
+                    addChatMessagesEntry(itemPath, file);
+                } else if (file.name.endsWith('group_info.json')) {
+                    await addChatMetadataEntry(itemPath, file);
+                } else {
+                    await addToFileCache(itemPath, file);
                 }
             }
         }
@@ -398,7 +408,7 @@
                 const chatBox = $('#chat');
                 chatBox.html('<i>Loading messages...</i>');
     
-                const file = await entry.getFile();
+                const file = entry;
                 const text = await file.text();
                 chatMessageCache[chatId] = preprocessImages(chatId, JSON.parse(text));
             }
@@ -496,7 +506,8 @@
         }
 
         $(document).ready(function() {
-            $('#select-directory').click(showChatList);
+            $('#select-directory').click(pickDirectory);
+            $('#directory-input').on('change', processSelectedDirectory);
         });
     </script>
 </body>
