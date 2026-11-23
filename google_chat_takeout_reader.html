@@ -244,9 +244,22 @@
             }
 
             // Format is "Thursday, July 14, 2016 at 5:04:34 PM UTC"
-            timestamp = timestamp.replace(' at ', ' ')
-            const date = new Date(timestamp);
-            return date.toLocaleString();
+            let date = new Date(timestamp.replace(' at ', ' '));
+            if (isNaN(date)) {
+                // Japanese export format: "2020年10月14日水曜日 9:02:15 UTC"
+                date = parseJapaneseTimestamp(timestamp);
+            }
+            return isNaN(date) ? timestamp : date.toLocaleString();
+        }
+
+        function parseJapaneseTimestamp(timestamp) {
+            // The "UTC" suffix is misleading: the time is actually Japan Standard Time (UTC+9)
+            const match = timestamp.match(/(\d{4})年(\d{1,2})月(\d{1,2})日.*?(\d{1,2}):(\d{2}):(\d{2})/);
+            if (!match) {
+                return new Date(NaN);
+            }
+            const [year, month, day, hour, minute, second] = match.slice(1).map(Number);
+            return new Date(Date.UTC(year, month - 1, day, hour - 9, minute, second));
         }
 
         async function addToFileCache(itemPath, entry) {
