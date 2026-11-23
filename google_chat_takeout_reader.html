@@ -246,10 +246,32 @@
             // Format is "Thursday, July 14, 2016 at 5:04:34 PM UTC"
             let date = new Date(timestamp.replace(' at ', ' '));
             if (isNaN(date)) {
+                // French export format: "mardi 29 août 2023 à 08:00:06 UTC"
+                date = parseFrenchTimestamp(timestamp);
+            }
+            if (isNaN(date)) {
                 // Japanese export format: "2020年10月14日水曜日 9:02:15 UTC"
                 date = parseJapaneseTimestamp(timestamp);
             }
             return isNaN(date) ? timestamp : date.toLocaleString();
+        }
+
+        function parseFrenchTimestamp(timestamp) {
+            // "UTC" suffix is correct here, so no timezone offset is applied
+            const match = timestamp.match(/(\d{1,2})\s+(\S+)\s+(\d{4})\D+?(\d{1,2}):(\d{2}):(\d{2})/);
+            if (!match) {
+                return new Date(NaN);
+            }
+            const months = ['janvier', 'fevrier', 'mars', 'avril', 'mai', 'juin',
+                'juillet', 'aout', 'septembre', 'octobre', 'novembre', 'decembre'];
+            // Strip accents so "août" and "aout" both match
+            const monthName = match[2].normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+            const month = months.indexOf(monthName);
+            if (month < 0) {
+                return new Date(NaN);
+            }
+            const [day, year, hour, minute, second] = [match[1], match[3], match[4], match[5], match[6]].map(Number);
+            return new Date(Date.UTC(year, month, day, hour, minute, second));
         }
 
         function parseJapaneseTimestamp(timestamp) {
