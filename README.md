@@ -15,13 +15,13 @@ Download and unzip Google Chat files from Google Takeout at https://takeout.goog
 
 Use the **Google Chat Takeout Reader** to view them.
 
-You can use the hosted version of this utility by clicking here: https://mrwoof.github.io/google-chat-takeout-reader/google_chat_takeout_reader.html
+You can use the hosted version of this utility by clicking here: https://remyfv.github.io/google-chat-takeout-reader/google_chat_takeout_reader.html
 
 **- OR -**
 
 If you'd prefer to download the utility and load it into your browser locally, do the following:
 
-- Download the file <a href="https://raw.githubusercontent.com/mrwoof/google-chat-takeout-reader/main/google_chat_takeout_reader.html" target="_new">`google_chat_takeout_reader.html`</a>
+- Download the file <a href="https://raw.githubusercontent.com/RemyFV/google-chat-takeout-reader/refs/heads/main/google_chat_takeout_reader.html" target="_new">`google_chat_takeout_reader.html`</a>
 - Open that file in Google Chrome
 - Select the directory containing your _uncompressed_ Google Chat Takeout files (this won't work on `.zip` or `.tgz` files -- you need to unzip them first)
 - Grant permission for your browser to view the files on the file system
@@ -31,7 +31,7 @@ That's it!
 
 
 ## Technical Notes
-- To my knowledge, this code only works with Google Chrome due to its use of `window.showDirectoryPicker()` -- not all browsers support directory selection.
+- Works in modern browsers including Chrome, Firefox, Safari, and Edge (uses the `webkitdirectory` attribute for cross-browser directory selection).
 - This code was only tested on MacOS.
 - Uses Bootstrap 5.3.0 and jquery 3.6.0, sourced from public URLs
 
